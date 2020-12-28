@@ -19,7 +19,10 @@ use Auth;
 class OrderController extends MainController
 {
    
-
+    /*
+    * @param [item_id, order_quantity, instruction, table_id, branch_id, voucher_code, order_mode, sales_tax, service_charge] 
+    * saving order from tablet to laravel as api
+    */
     public function save(Request $request)
     {
 
@@ -39,7 +42,6 @@ class OrderController extends MainController
             $order->tax_rate            = $charges->sales_tax;
             $order->service_rate        = $charges->service_charge;
             $order->save();
-            OrderBrk::where('order_id',$order->order_id)->delete();
 
             foreach($item_id as $key => $item)
             {
@@ -54,13 +56,12 @@ class OrderController extends MainController
                 $order_item->order_price            = $items->item_price;
                 $order_item->special_instruction    =  $instruction[$key];
                 $order_item->save();
-                Self::order_brk($order->order_id, $items, $order_quantity[$key], $option_id, $instruction[$key]);
             }
 
 
             $data['order_id'] = $order->order_id;
             $data['table_id'] = $request->table_id;
-            // $data['table_name'] = 
+            
             event(New OrderEvent(Self::order_details($order->order_id), 'NewOrder'));
             $table                  = TableNumber::where('table_id', $request->table_id)->first();
             $logs                   = new LogModel;
@@ -76,15 +77,18 @@ class OrderController extends MainController
     	 
     }
 
+    /*
+    * handling order data if it's already exists or not
+    */
     public function order_details($order_id)
     {
-        $order = OrderModel::single($order_id)->first();
-        $data['order_id'] = $order_id;
-        $data['table_id'] = 0;
+        $order              = OrderModel::single($order_id)->first();
+        $data['order_id']   = $order_id;
+        $data['table_id']   = 0;
         $data['table_name'] = '';
         if(!is_null($order))
         {
-            $data['table_id'] = $order->table_id;
+            $data['table_id']   = $order->table_id;
             $data['table_name'] = $order->table_number;
         }
 
